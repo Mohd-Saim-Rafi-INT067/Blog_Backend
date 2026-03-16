@@ -1,8 +1,14 @@
 using System.Security.Claims;
+using BlogApp.DTOs.Auth;
+using BlogApp.DTOs.Blogs;
+using BlogApp.DTOs.Comments;
+using BlogApp.DTOs.Subscriptions;
 using BlogApp.DTOs.Topics;
+using BlogApp.DTOs.Users;
 using BlogApp.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using BlogApp.DTOs;
 
 namespace BlogApp.Controllers;
 
@@ -18,14 +24,16 @@ public class TopicController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllTopics() =>
-        Ok(await _topicService.GetAllTopicsAsync());
-    
+    public async Task<IActionResult> GetAllTopics() {
+        var result = await _topicService.GetAllTopicsAsync();
+        return Ok(ApiResponseDto<IEnumerable<TopicResponseDto>>.Ok(result, "Topics fetched successfully."));
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetTopicById(int id)
     {
-        try { return Ok (await _topicService.GetTopicByIdAsync(id)); }
-        catch (KeyNotFoundException ex) { return NotFound(new {message = ex.Message}); }
+        var result = await _topicService.GetTopicByIdAsync(id);
+        return Ok(ApiResponseDto<TopicResponseDto>.Ok(result, "Topic fetched successfully."));
     }
 
     [HttpPost]
@@ -33,15 +41,8 @@ public class TopicController : ControllerBase
     public async Task<IActionResult> CreateTopic([FromBody] CreateTopicDto dto)
     {
         var authorId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        try
-        {
-            var result = await _topicService.CreateTopicAsync(dto, authorId);
-            return CreatedAtAction(nameof(GetTopicById), new { id = result.Id }, result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _topicService.CreateTopicAsync(dto, authorId);
+        return CreatedAtAction(nameof(GetTopicById), new { id = result.Id }, ApiResponseDto<TopicResponseDto>.Created(result, "Topic created successfully."));
     }
 
     [HttpDelete("{id}")]
@@ -49,10 +50,9 @@ public class TopicController : ControllerBase
     public async Task<IActionResult> DeleteTopic(int id)
     {
         var role = User.FindFirstValue(ClaimTypes.Role)!;
-        try {await _topicService.DeleteTopicAsync(id,role); return NoContent(); }
-        catch (UnauthorizedAccessException) { return Forbid(); }
-        catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+        await _topicService.DeleteTopicAsync(id,role);
+        return Ok(ApiResponseDto<string>.Ok(null, "Topic deleted successfully.")); 
     }
-
+    
 }
 

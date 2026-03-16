@@ -1,7 +1,13 @@
-using BlogApp.DTOs.Auth;
 using BlogApp.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using BlogApp.DTOs.Auth;
+using BlogApp.DTOs.Blogs;
+using BlogApp.DTOs.Comments;
+using BlogApp.DTOs.Subscriptions;
+using BlogApp.DTOs.Topics;
+using BlogApp.DTOs.Users;
+using BlogApp.DTOs;
 
 namespace BlogApp.Controllers;
 
@@ -15,36 +21,26 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
-        try
-        {
-            var result = await _authService.RegisterAsync(dto);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new {message = ex.Message});
-        }
+        
+        var result = await _authService.RegisterAsync(dto);
+        return Ok(ApiResponseDto<AuthResponseDto>.Ok(result, "Registered Successfully"));
+        
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        try
-        {
-            var result = await _authService.LoginAsync(dto);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return Unauthorized(new {message = ex.Message});
-        }
+
+        var result = await _authService.LoginAsync(dto);
+        return Ok(ApiResponseDto<AuthResponseDto>.Ok(result, "Login successful"));
+        
     }
 
 
     [HttpPost("logout")]
     [Authorize]
     public IActionResult Logout() =>
-        Ok(new { message = "Logged out successfully" });
+        Ok(ApiResponseDto<object>.Ok(null, "Logged out successfully"));
     //frontend will delete the token on logout, so no server-side action is needed for stateless JWT auth
 
 }

@@ -1,9 +1,15 @@
 using System.Security.Claims;
+using BlogApp.DTOs.Auth;
+using BlogApp.DTOs.Blogs;
+using BlogApp.DTOs.Comments;
+using BlogApp.DTOs.Subscriptions;
+using BlogApp.DTOs.Topics;
 using BlogApp.DTOs.Users;
 using BlogApp.Models;
 using BlogApp.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using BlogApp.DTOs;
 
 namespace BlogApp.Controllers;
 
@@ -24,15 +30,15 @@ public class UserController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAllUsers([FromQuery] UserRole? role)
     {
-        var users = await _userService.GetAllUsersAsync(role);
-        return Ok(users);
+        var result = await _userService.GetAllUsersAsync(role);
+        return Ok(ApiResponseDto<IEnumerable<UserResponseDto>>.Ok(result, "Users fetched successfully."));
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetUserById(int id)
     {
-        try { return Ok(await _userService.GetUserByIdAsync(id)); }
-        catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+        var result = await _userService.GetUserByIdAsync(id);
+        return Ok(ApiResponseDto<UserResponseDto>.Ok(result, "User fetched successfully."));
     }
 
     [HttpPatch("{id}")]
@@ -41,9 +47,8 @@ public class UserController : ControllerBase
     {
         var requesterId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var role = User.FindFirstValue(ClaimTypes.Role)!;
-        try { return Ok(await _userService.UpdateUserAsync(id, dto, requesterId, role)); }
-        catch (UnauthorizedAccessException ) { return Forbid(); }
-        catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+        var result = await _userService.UpdateUserAsync(id, dto, requesterId, role);
+        return Ok(ApiResponseDto<UserResponseDto>.Ok(result, "User updated successfully."));
     }
 
     [HttpDelete("{id}")]
@@ -52,20 +57,14 @@ public class UserController : ControllerBase
     {
         var requesterId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var role = User.FindFirstValue(ClaimTypes.Role)!;
-        try
-        {
-            await _userService.DeleteUserAsync(id, requesterId, role);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException) { return Forbid(); }
-        catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+        await _userService.DeleteUserAsync(id, requesterId, role);
+        return Ok(ApiResponseDto<string>.Ok("User deleted successfully."));
     }
 
     [HttpGet("{id}/blogs")]
-    public async Task<IActionResult> GetUserBlogs(int id,
-        [FromQuery] bool? isPublished)
+    public async Task<IActionResult> GetUserBlogs(int id,[FromQuery] bool? isPublished)
     {
         var blogs = await _blogService.GetBlogsByAuthorAsync(id, isPublished);
-        return Ok(blogs);
+        return Ok(ApiResponseDto<IEnumerable<BlogResponseDto>>.Ok(blogs, "User blogs fetched successfully."));
     }
 }

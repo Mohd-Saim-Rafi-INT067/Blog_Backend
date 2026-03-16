@@ -28,6 +28,7 @@ public class TopicService : ITopicService
         return new TopicWithBlogsDto
         {
             Id = topic.Id,
+            Name = topic.Name, 
             AuthorId = topic.AuthorId,
             CreatedBy = topic.Author.Username,
             CreatedAt = topic.CreatedAt,
